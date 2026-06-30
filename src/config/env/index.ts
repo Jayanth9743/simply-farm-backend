@@ -17,6 +17,7 @@ export const env = {
   server: {
     nodeEnv: data.NODE_ENV,
     port: data.PORT,
+    trustProxy: data.TRUST_PROXY,
   },
 
   database: {

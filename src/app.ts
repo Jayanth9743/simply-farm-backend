@@ -1,31 +1,18 @@
 import express from "express";
-
-import routes from "./routes";
-import { API_PREFIX } from "./shared/constants/api";
 import { errorMiddleware } from "./middlewares/error.middleware";
+import { notFoundMiddleware } from "./middlewares/not-found.middleware";
+import { registerMiddlewares } from "./middlewares";
+import { env } from "./config/env";
 
 const app = express();
 
-/**
- * Basic Express Configuration
- */
+// Express application settings
 app.disable("x-powered-by");
+app.set("trust proxy", env.server.trustProxy);
 
-/**
- * Built-in Middleware
- */
-app.use(express.json());
+registerMiddlewares(app);
 
-app.use(
-  express.urlencoded({
-    extended: true,
-  })
-);
-
-/**
- * API Routes
- */
-app.use(API_PREFIX, routes);
+app.use(notFoundMiddleware)
 
 app.use(errorMiddleware);
 
