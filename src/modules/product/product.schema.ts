@@ -10,3 +10,5 @@ export const createProductSchema = z.object({
     isActive: z.boolean({error: "isActive is required"}).optional().default(true),
     stock: z.number({error: "Stock is required"}).int().nonnegative().max(PRODUCT_LIMITS.STOCK_MAX_VALUE).optional().default(0),
 });
+
+export type CreateProductInput = z.infer<typeof createProductSchema>;

@@ -7,3 +7,7 @@ export const PRODUCT_LIMITS = {
     CATEGORY_MAX_LENGTH: 50,
     STOCK_MAX_VALUE: 999999,
 };
+
+export const PRODUCT_MESSAGES = {
+  CREATED: "Product created successfully",
+};
