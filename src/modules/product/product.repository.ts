@@ -8,4 +8,35 @@ export const productRepository = {
       data,
     });
   },
+
+  async findAll(params: {
+    skip: number;
+    take: number;
+    where?: Prisma.ProductWhereInput;
+    orderBy?: Prisma.ProductOrderByWithRelationInput;
+  }) {
+    const {
+      skip,
+      take,
+      where = {},
+      orderBy = { createdAt: "asc" },
+    } = params;
+
+    const [products, total] = await prisma.$transaction([
+      prisma.product.findMany({
+        skip,
+        take,
+        where,
+        orderBy,
+      }),
+      prisma.product.count({
+        where,
+      }),
+    ]);
+
+    return {
+      products,
+      total,
+    };
+  },
 };
