@@ -17,4 +17,5 @@ export const PRODUCT_LIMITS = {
 
 export const PRODUCT_MESSAGES = {
   CREATED: "Product created successfully",
+  FETCHED_ALL: "Products fetched successfully",
 };

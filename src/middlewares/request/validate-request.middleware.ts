@@ -14,7 +14,13 @@ export function validateRequest(schema: ValidationSchema) {
     }
 
     if (schema.query) {
-      req.query = schema.query.parse(req.query) as Request["query"];
+      // Express 5 makes req.query a getter-only accessor (no setter),
+      // so it must be redefined rather than assigned directly.
+      Object.defineProperty(req, "query", {
+        value: schema.query.parse(req.query),
+        writable: true,
+        configurable: true,
+      });
     }
 
     if (schema.body) {
