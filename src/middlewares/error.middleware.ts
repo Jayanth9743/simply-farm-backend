@@ -4,6 +4,7 @@ import { ZodError } from "zod";
 import { ApiError } from "../shared/errors";
 import { logger } from "../config/logger";
 import { env } from "../config/env";
+import { Prisma } from "@prisma/client";
 
 const isDevelopment = env.server.nodeEnv === "development";
 
@@ -32,6 +33,14 @@ export function errorMiddleware(
       })),
     });
   }
+
+  if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+  const field = (err.meta?.target as string[])?.join(", ") ?? "field";
+  return res.status(409).json({
+    success: false,
+    message: `${field} already exists`,
+  });
+}
 
   return res.status(500).json({
     success: false,

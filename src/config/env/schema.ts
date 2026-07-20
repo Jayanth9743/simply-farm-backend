@@ -11,8 +11,8 @@ export const envSchema = z.object({
   JWT_ACCESS_SECRET: z.string().min(32),
   JWT_REFRESH_SECRET: z.string().min(32),
 
-  JWT_ACCESS_EXPIRES_IN: z.string(),
-  JWT_REFRESH_EXPIRES_IN: z.string(),
+  JWT_ACCESS_EXPIRES_IN: z.coerce.number(), // e.g. 900
+  JWT_REFRESH_EXPIRES_IN: z.coerce.number(), // e.g. 604800
 
   CLIENT_URL: z.url(),
 
