@@ -16,3 +16,8 @@ authRouter.post(
   validateRequest({ body: loginSchema }),
   authController.login
 );
+
+authRouter.post(
+  "/refresh",
+  authController.refresh
+);

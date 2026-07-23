@@ -13,4 +13,19 @@ export const authRepository = {
   saveRefreshToken(data: Prisma.RefreshTokenCreateInput) {
     return prisma.refreshToken.create({ data });
   },
+
+  findById(id: string) {
+  return prisma.user.findUnique({ where: { id } });
+},
+
+findRefreshTokenByHash(tokenHashed: string ) {
+  return prisma.refreshToken.findUnique({ where: { tokenHashed } });
+},
+
+revokeRefreshToken(id: string) {
+  return prisma.refreshToken.update({
+    where: { id },
+    data: { revokedAt: new Date() },
+  });
+},
 };

@@ -2,10 +2,14 @@ import type { Request, Response } from "express";
 import { authService } from "./auth.service";
 import { sendResponse } from "@/shared/responses/api-response";
 import type { RegisterInput, LoginInput } from "./auth.schema";
+import { setRefreshTokenCookie } from "@/shared/utils/cookie.util";
+import { ApiError } from "@/shared/errors/api-error";
 
 export const authController = {
   async register(req: Request, res: Response) {
-    const result = await authService.register(req.body as RegisterInput);
+    const {refreshToken, ...result} = await authService.register(req.body as RegisterInput);
+
+    setRefreshTokenCookie(res, refreshToken);
 
     return sendResponse(res, {
       statusCode: 201,
@@ -15,7 +19,9 @@ export const authController = {
   },
 
   async login(req: Request, res: Response) {
-    const result = await authService.login(req.body as LoginInput);
+    const {refreshToken, ...result} = await authService.login(req.body as LoginInput);
+
+    setRefreshTokenCookie(res, refreshToken);
 
     return sendResponse(res, {
       statusCode: 200,
@@ -23,4 +29,22 @@ export const authController = {
       data: result,
     });
   },
+
+  async refresh(req: Request, res: Response) {
+  const incomingRefreshToken = req.cookies?.refreshToken;
+
+  if (!incomingRefreshToken) {
+    throw new ApiError(401, "No refresh token provided");
+  }
+
+  const { refreshToken, ...result } = await authService.refresh(incomingRefreshToken);
+
+  setRefreshTokenCookie(res, refreshToken);
+
+  return sendResponse(res, {
+    statusCode: 200,
+    message: "Token refreshed successfully",
+    data: result,
+  });
+},
 };
