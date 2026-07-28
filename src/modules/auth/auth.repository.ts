@@ -15,17 +15,24 @@ export const authRepository = {
   },
 
   findById(id: string) {
-  return prisma.user.findUnique({ where: { id } });
-},
+    return prisma.user.findUnique({ where: { id } });
+  },
 
-findRefreshTokenByHash(tokenHashed: string ) {
-  return prisma.refreshToken.findUnique({ where: { tokenHashed } });
-},
+  findRefreshTokenByHash(tokenHashed: string) {
+    return prisma.refreshToken.findUnique({ where: { tokenHashed } });
+  },
 
-revokeRefreshToken(id: string) {
-  return prisma.refreshToken.update({
-    where: { id },
-    data: { revokedAt: new Date() },
-  });
-},
+  revokeRefreshToken(id: string) {
+    return prisma.refreshToken.update({
+      where: { id },
+      data: { revokedAt: new Date() },
+    });
+  },
+
+  revokeAllRefreshTokensForUser(userId: string) {
+    return prisma.refreshToken.updateMany({
+      where: { userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+  },
 };

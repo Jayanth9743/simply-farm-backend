@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import { authService } from "./auth.service";
 import { sendResponse } from "@/shared/responses/api-response";
 import type { RegisterInput, LoginInput } from "./auth.schema";
-import { setRefreshTokenCookie } from "@/shared/utils/cookie.util";
+import { clearRefreshTokenCookie, setRefreshTokenCookie } from "@/shared/utils/cookie.util";
 import { ApiError } from "@/shared/errors/api-error";
 
 export const authController = {
@@ -47,4 +47,16 @@ export const authController = {
     data: result,
   });
 },
+
+async logout(req: Request, res: Response) {
+  await authService.logout(req.user!.sub);
+
+  clearRefreshTokenCookie(res);
+
+  return sendResponse(res, {
+    statusCode: 200,
+    message: "Logged out successfully",
+  });
+},
+
 };

@@ -2,6 +2,7 @@ import { Router } from "express";
 import { authController } from "./auth.controller";
 import { validateRequest } from "@/middlewares/request/validate-request.middleware";
 import { registerSchema, loginSchema } from "./auth.schema";
+import { authenticate } from "@/middlewares/auth/authenticate.middleware";
 
 export const authRouter = Router();
 
@@ -20,4 +21,10 @@ authRouter.post(
 authRouter.post(
   "/refresh",
   authController.refresh
+);
+
+authRouter.post(
+  "/logout",
+  authenticate,
+  authController.logout
 );

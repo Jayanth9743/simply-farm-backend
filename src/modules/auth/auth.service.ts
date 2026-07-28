@@ -1,7 +1,12 @@
 import { authRepository } from "./auth.repository";
 import { comparePassword, hashPassword } from "@/shared/utils/hash.util";
 import { hashToken } from "@/shared/utils/hash.util";
-import { RefreshTokenPayload, signAccessToken, signRefreshToken, verifyRefreshToken } from "@/shared/utils/jwt.util";
+import {
+  RefreshTokenPayload,
+  signAccessToken,
+  signRefreshToken,
+  verifyRefreshToken,
+} from "@/shared/utils/jwt.util";
 import { ApiError } from "@/shared/errors/api-error";
 import { env } from "@/config/env";
 import type { LoginInput, RegisterInput } from "./auth.schema";
@@ -110,5 +115,9 @@ export const authService = {
     });
 
     return { accessToken: newAccessToken, refreshToken: newRefreshToken };
+  },
+
+  async logout(userId: string) {
+    await authRepository.revokeAllRefreshTokensForUser(userId);
   },
 };
