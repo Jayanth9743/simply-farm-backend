@@ -39,4 +39,17 @@ export const productRepository = {
       total,
     };
   },
+
+  async findById(id: string) {
+    return prisma.product.findUnique({
+      where: { id },
+    });
+  },
+
+  async update(id: string, data: Prisma.ProductUpdateInput) {
+    return prisma.product.update({
+      where: { id },
+      data,
+    });
+  }
 };

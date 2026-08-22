@@ -25,6 +25,9 @@ export const envSchema = z.object({
     "trace",
     "silent",
   ]),
-});
+
+  REDIS_PASSWORD: z.string(),
+  REDIS_URL: z.url(),
+})
 
 export type EnvSchema = z.infer<typeof envSchema>;

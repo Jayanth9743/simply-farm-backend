@@ -1,7 +1,14 @@
 import { Prisma } from "@prisma/client";
-import type { CreateProductInput, GetProductsQueryInput } from "./product.schema";
+import type {
+  CreateProductInput,
+  GetProductsQueryInput,
+} from "./product.schema";
 
 import { productRepository } from "./product.repository";
+import { redis } from "@/lib/redis";
+import { ApiError } from "@/shared/errors";
+import { StatusCodes } from "http-status-codes";
+import { PRODUCT_MESSAGES } from "./product.constants";
 
 export const productService = {
   async createProduct(data: CreateProductInput) {
@@ -12,14 +19,7 @@ export const productService = {
   },
 
   async getProducts(query: GetProductsQueryInput) {
-    const {
-      page,
-      limit,
-      category,
-      isActive,
-      sortBy,
-      order,
-    } = query;
+    const { page, limit, category, isActive, sortBy, order } = query;
 
     const skip = (page - 1) * limit;
 
@@ -53,5 +53,40 @@ export const productService = {
         totalPages: Math.ceil(total / limit),
       },
     };
+  },
+
+  async getProductById(id: string) {
+    const key = `product:${id}`;
+
+    const cachedProduct = await redis.get(key);
+
+    if (cachedProduct) {
+      return JSON.parse(cachedProduct);
+    }
+    const product = await productRepository.findById(id);
+
+    if (!product) {
+      throw new ApiError(StatusCodes.NOT_FOUND, PRODUCT_MESSAGES.NOT_FOUND);
+    }
+
+    await redis.setEx(key, 300, JSON.stringify(product)); // Cache for 5 minutes
+    return product;
+  },
+
+  async updateProduct(id: string, data: Partial<CreateProductInput>) {
+    const product = await productRepository.findById(id);
+
+    if (!product) {
+      throw new ApiError(StatusCodes.NOT_FOUND, PRODUCT_MESSAGES.NOT_FOUND);
+    }
+
+    const updatedProduct = await productRepository.update(id, {
+      ...data,
+      price: data.price ? new Prisma.Decimal(data.price) : product.price,
+    });
+
+    const key = `product:${id}`;
+    await redis.del(key); // Invalidate cache
+    return updatedProduct;
   },
 };

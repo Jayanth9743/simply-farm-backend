@@ -26,3 +26,13 @@ export const getProductsQuerySchema = z.object({
 });
 
 export type GetProductsQueryInput = z.infer<typeof getProductsQuerySchema>;
+
+
+//GET BY ID
+export const getProductByIdSchema = z.object({
+ 
+    id: z.string().cuid(),
+
+});
+
+export type GetProductByIdInput = z.infer<typeof getProductByIdSchema>;
