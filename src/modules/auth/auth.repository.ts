@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "../../../generated/prisma";
 
 export const authRepository = {
   findByEmail(email: string) {

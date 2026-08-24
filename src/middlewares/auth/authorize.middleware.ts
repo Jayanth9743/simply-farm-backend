@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
-import type { Role } from "@prisma/client";
 import { ApiError } from "@/shared/errors";
+import { Role } from "../../../generated/prisma";
 
 export function authorize(...allowedRoles: Role[]) {
   return (req: Request, _res: Response, next: NextFunction) => {

@@ -1,5 +1,6 @@
-import type { Prisma } from "@prisma/client";
+
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "../../../generated/prisma";
 
 
 export const productRepository = {
