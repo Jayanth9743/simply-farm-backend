@@ -4,7 +4,7 @@ import { ZodError } from "zod";
 import { ApiError } from "../shared/errors";
 import { logger } from "../config/logger";
 import { env } from "../config/env";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "../../generated/prisma/client";
 
 const isDevelopment = env.server.nodeEnv === "development";
 
