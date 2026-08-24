@@ -9,6 +9,7 @@ import { redis } from "@/lib/redis";
 import { ApiError } from "@/shared/errors";
 import { StatusCodes } from "http-status-codes";
 import { PRODUCT_MESSAGES } from "./product.constants";
+import { logger } from "@/config/logger";
 
 export const productService = {
   async createProduct(data: CreateProductInput) {
@@ -57,8 +58,12 @@ export const productService = {
 
   async getProductById(id: string) {
     const key = `product:${id}`;
-
-    const cachedProduct = await redis.get(key);
+    let cachedProduct: string | null = null;
+    try{
+       cachedProduct = await redis.get(key);
+    } catch (error) {
+      logger.warn({ error, key }, "Error occurred while fetching product from Redis");
+    }
 
     if (cachedProduct) {
       return JSON.parse(cachedProduct);
@@ -69,7 +74,11 @@ export const productService = {
       throw new ApiError(StatusCodes.NOT_FOUND, PRODUCT_MESSAGES.NOT_FOUND);
     }
 
-    await redis.setEx(key, 300, JSON.stringify(product)); // Cache for 5 minutes
+   try{
+     await redis.setEx(key, 300, JSON.stringify(product)); // Cache for 5 minutes
+   }catch (error) {
+     logger.warn({ error }, "Error occurred while caching product in Redis");
+   }
     return product;
   },
 
@@ -86,7 +95,11 @@ export const productService = {
     });
 
     const key = `product:${id}`;
-    await redis.del(key); // Invalidate cache
+    try {
+      await redis.del(key); // Invalidate cache
+    } catch (error) {
+      logger.error({ error }, "Error occurred while deleting product from Redis");
+    }
     return updatedProduct;
   },
 };
