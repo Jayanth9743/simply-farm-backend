@@ -19,7 +19,6 @@ async function bootstrap() {
       "Server started",
     );
   });
-
   const shutdown = async (signal: string) => {
     logger.info({ signal }, "Shutdown signal received");
 
