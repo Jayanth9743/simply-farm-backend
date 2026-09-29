@@ -38,6 +38,11 @@ export const env = {
   logger: {
     level: data.LOG_LEVEL,
   },
+
+  redis: {
+    password: data.REDIS_PASSWORD,
+    url: data.REDIS_URL,
+  },
 } as const;
 
 export type Env = typeof env;

@@ -16,7 +16,7 @@ dist/
 coverage/
 
 # Prisma generated files (only if you customize output)
-/generated/prisma/
+generated/prisma/
 
 # Uploads
 uploads/

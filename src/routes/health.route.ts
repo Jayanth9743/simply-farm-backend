@@ -3,7 +3,8 @@ import { sendResponse } from "../shared/responses";
 
 const healthRouter = Router();
 
-healthRouter.get("/", (req, res) => {
+healthRouter.get("/", async (req, res) => {
+  
   return sendResponse(res, {
     statusCode: 200,
     message: "Server is running",
