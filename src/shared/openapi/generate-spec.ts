@@ -1,6 +1,5 @@
 import { OpenApiGeneratorV3 } from "@asteasolutions/zod-to-openapi";
 import { registry } from "./registry";
-import "@/modules/auth/auth.openapi"; // side-effect import — runs registerPath calls
 import { API_PREFIX } from "../constants/api";
 
 export function generateOpenApiSpec() {
