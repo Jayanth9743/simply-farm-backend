@@ -19,4 +19,10 @@ export const AUTH_MESSAGES = {
   NAME_MIN: `Name must be at least ${NAME_MIN_LENGTH} characters`,
   NAME_MAX: `Name must be at most ${NAME_MAX_LENGTH} characters`,
   INVALID_PHONE: "Invalid phone number",
+
+  // Deliberately identical for "no such user" and "wrong password" so the
+  // response cannot be used to probe which phone numbers are registered.
+  INVALID_CREDENTIALS: "Invalid credentials",
+  INVALID_REFRESH_TOKEN: "Invalid or expired refresh token",
+  ACCOUNT_SUSPENDED: "This account has been suspended",
 };

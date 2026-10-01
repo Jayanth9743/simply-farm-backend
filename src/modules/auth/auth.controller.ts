@@ -37,7 +37,7 @@ export const authController = {
   },
 
   async refresh(req: Request, res: Response) {
-    const refreshToken = req.cookies["refreshToken"];
+    const refreshToken = req.cookies["refreshToken"] as string | undefined;
 
     if (!refreshToken) {
       throw new ApiError(StatusCodes.UNAUTHORIZED, "No refresh token provided");
@@ -54,12 +54,10 @@ export const authController = {
     });
   },
 
+  // Idempotent: always clears the cookie and always succeeds, even when the
+  // presented token is missing, expired or already revoked.
   async logout(req: Request, res: Response) {
-    const refreshToken = req.cookies["refreshToken"];
-
-    if (!refreshToken) {
-      throw new ApiError(StatusCodes.UNAUTHORIZED, "No refresh token provided");
-    }
+    const refreshToken = req.cookies["refreshToken"] as string | undefined;
 
     await authService.logout(refreshToken);
     clearRefreshTokenCookie(res);

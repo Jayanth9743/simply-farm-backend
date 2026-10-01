@@ -127,6 +127,14 @@ registry.registerPath({
         },
       },
     },
+    403: {
+      description: "Account suspended",
+      content: {
+        "application/json": {
+          schema: authErrorSchema,
+        },
+      },
+    },
     400: {
       description: "Validation error",
       content: {
@@ -153,7 +161,16 @@ registry.registerPath({
       },
     },
     401: {
-      description: "Refresh token missing or invalid",
+      description:
+        "Refresh token missing, invalid, expired, or replayed after rotation",
+      content: {
+        "application/json": {
+          schema: authErrorSchema,
+        },
+      },
+    },
+    403: {
+      description: "Account suspended",
       content: {
         "application/json": {
           schema: authErrorSchema,
@@ -168,20 +185,15 @@ registry.registerPath({
   path: "/auth/logout",
   tags: ["Auth"],
   summary: "Log out the current user and revoke the refresh token",
+  description:
+    "Idempotent. Always clears the refresh token cookie and returns 200, " +
+    "including when no valid refresh token was presented.",
   responses: {
     200: {
       description: "User logged out successfully",
       content: {
         "application/json": {
           schema: authLogoutSuccessSchema,
-        },
-      },
-    },
-    401: {
-      description: "Refresh token missing or invalid",
-      content: {
-        "application/json": {
-          schema: authErrorSchema,
         },
       },
     },
