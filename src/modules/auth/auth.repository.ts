@@ -22,4 +22,23 @@ export const authRepository = {
       data: data,
     });
   },
+
+  findRefreshTokenByHash(tokenHash: string) {
+    return prisma.refreshToken.findFirst({
+      where: { tokenHash },
+    });
+  },
+
+  revokeRefreshToken(tokenHash: string) {
+    return prisma.refreshToken.updateMany({
+      where: { tokenHash },
+      data: { revokedAt: new Date() },
+    });
+  },
+
+  findById(id: string) {
+    return prisma.user.findUnique({
+      where: { id },
+    });
+  },
 };

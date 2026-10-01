@@ -8,6 +8,8 @@ export const PASSWORD_REGEX = {
   symbol: /[^A-Za-z0-9]/,
 };
 
+export const PHONE_REGEX = /^\+?[1-9]\d{1,14}$/;
+
 export const AUTH_MESSAGES = {
   PASSWORD_MIN: `Password must be at least ${PASSWORD_MIN_LENGTH} characters`,
   PASSWORD_UPPERCASE: "Password must contain at least one uppercase letter",
@@ -16,4 +18,5 @@ export const AUTH_MESSAGES = {
   INVALID_EMAIL: "Invalid email address",
   NAME_MIN: `Name must be at least ${NAME_MIN_LENGTH} characters`,
   NAME_MAX: `Name must be at most ${NAME_MAX_LENGTH} characters`,
+  INVALID_PHONE: "Invalid phone number",
 };
