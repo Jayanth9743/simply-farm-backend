@@ -7,7 +7,932 @@ datasource db {
   provider = "postgresql"
 }
 
+// ============================================================
+// IDENTITY
+// ============================================================
+
 enum Role {
   USER
   ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+model User {
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String     @db.VarChar(100)
+  email        String?    @unique @db.VarChar(255)
+  phone        String     @unique @db.VarChar(20)
+  passwordHash String     @map("password_hash") @db.VarChar(255)
+
+  role   Role       @default(USER)
+  status UserStatus @default(ACTIVE)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  addresses      Address[]
+  payoutAccounts PayoutAccount[]
+  refreshTokens  RefreshToken[]
+
+  producedListings      ProduceListing[]
+  produceOrdersAsBuyer  ProduceOrder[]  @relation("ProduceOrderBuyer")
+  produceOrdersAsSeller ProduceOrder[]  @relation("ProduceOrderSeller")
+
+  equipment              Equipment[]
+  rentalBookingsAsRenter RentalBooking[] @relation("RentalBookingRenter")
+  rentalBookingsAsOwner  RentalBooking[] @relation("RentalBookingOwner")
+
+  payoutsReceived          Payout[]
+  conversationParticipants ConversationParticipant[]
+  messagesSent             Message[]
+  notifications            Notification[]
+  commissionConfigsCreated CommissionConfig[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id     String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId String @map("user_id") @db.Uuid
+
+  tokenHash String             @unique @map("token_hash") @db.VarChar(255)
+  status    RefreshTokenStatus @default(ACTIVE)
+
+  userAgent String? @map("user_agent") @db.VarChar(255)
+  ipAddress String? @map("ip_address") @db.VarChar(45)
+
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([userId, status])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+enum RefreshTokenStatus {
+  ACTIVE
+  ROTATED
+  REVOKED
+}
+
+model Address {
+  id     String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId String @map("user_id") @db.Uuid
+
+  label        String  @db.VarChar(100)
+  addressLine1 String  @map("address_line_1") @db.VarChar(255)
+  addressLine2 String? @map("address_line_2") @db.VarChar(255)
+  village      String? @db.VarChar(100)
+  taluk        String? @db.VarChar(100)
+  district     String  @db.VarChar(100)
+  state        String  @db.VarChar(100)
+  pincode      String  @db.VarChar(10)
+  latitude     Decimal? @db.Decimal(10, 7)
+  longitude    Decimal? @db.Decimal(10, 7)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user            User             @relation(fields: [userId], references: [id])
+  produceListings ProduceListing[]
+  equipment       Equipment[]
+
+  @@index([userId])
+  @@map("addresses")
+}
+
+enum PayoutMethod {
+  BANK_ACCOUNT
+  UPI
+}
+
+model PayoutAccount {
+  id     String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId String @map("user_id") @db.Uuid
+
+  payoutMethod      PayoutMethod @map("payout_method")
+  accountHolderName String?      @map("account_holder_name") @db.VarChar(150)
+  accountNumber     String?      @map("account_number") @db.VarChar(50)
+  ifscCode          String?      @map("ifsc_code") @db.VarChar(20)
+  upiId             String?      @map("upi_id") @db.VarChar(255)
+  isDefault         Boolean      @default(false) @map("is_default")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user    User     @relation(fields: [userId], references: [id])
+  payouts Payout[]
+
+  @@index([userId])
+  @@map("payout_accounts")
+}
+
+// ============================================================
+// PRODUCE DOMAIN
+// ============================================================
+
+enum CatalogStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ListingStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model ProduceCategory {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String        @unique @db.VarChar(100)
+  description String?       @db.Text
+  status      CatalogStatus @default(ACTIVE)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  produceListings ProduceListing[]
+
+  @@map("produce_categories")
+}
+
+model Unit {
+  id     String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name   String        @unique @db.VarChar(50)
+  symbol String        @unique @db.VarChar(20)
+  status CatalogStatus @default(ACTIVE)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  produceListings ProduceListing[]
+  produceOrders   ProduceOrder[]
+
+  @@map("units")
+}
+
+model ProduceListing {
+  id                String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sellerId          String @map("seller_id") @db.Uuid
+  categoryId        String @map("category_id") @db.Uuid
+  unitId            String @map("unit_id") @db.Uuid
+  locationAddressId String @map("location_address_id") @db.Uuid
+
+  name        String  @db.VarChar(150)
+  description String? @db.Text
+  price       Decimal @db.Decimal(12, 2)
+
+  cancellationWindowHours   Int     @default(2) @map("cancellation_window_hours")
+  cancellationFeePercentage Decimal @default(50.00) @map("cancellation_fee_percentage") @db.Decimal(5, 2)
+
+  status ListingStatus @default(ACTIVE)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  seller   User            @relation(fields: [sellerId], references: [id])
+  category ProduceCategory @relation(fields: [categoryId], references: [id])
+  unit     Unit            @relation(fields: [unitId], references: [id])
+  location Address         @relation(fields: [locationAddressId], references: [id])
+
+  images    ProduceImage[]
+  inventory ProduceInventory?
+  orders    ProduceOrder[]
+
+  @@index([sellerId])
+  @@index([categoryId])
+  @@index([unitId])
+  @@index([locationAddressId])
+  @@index([status])
+  @@index([sellerId, status])
+  @@index([categoryId, status])
+  @@map("produce_listings")
+}
+
+model ProduceImage {
+  id               String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  produceListingId String @map("produce_listing_id") @db.Uuid
+
+  url       String @db.VarChar(1000)
+  sortOrder Int    @default(0) @map("sort_order")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  listing ProduceListing @relation(fields: [produceListingId], references: [id])
+
+  @@index([produceListingId])
+  @@map("produce_images")
+}
+
+model ProduceInventory {
+  id               String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  produceListingId String @unique @map("produce_listing_id") @db.Uuid
+
+  totalQuantity     Decimal @map("total_quantity") @db.Decimal(12, 3)
+  availableQuantity Decimal @map("available_quantity") @db.Decimal(12, 3)
+  reservedQuantity  Decimal @default(0) @map("reserved_quantity") @db.Decimal(12, 3)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  listing      ProduceListing         @relation(fields: [produceListingId], references: [id])
+  reservations InventoryReservation[]
+
+  @@map("produce_inventory")
+}
+
+enum DeliveryType {
+  PLATFORM_DELIVERY
+  BUYER_PICKUP
+}
+
+enum ProduceOrderStatus {
+  PENDING_SELLER_APPROVAL
+  APPROVED
+  PAYMENT_PENDING
+  CONFIRMED
+  PREPARING
+  READY_FOR_DISPATCH
+  DISPATCHED
+  DELIVERED
+  REJECTED
+  CANCELLED
+  EXPIRED
+}
+
+model ProduceOrder {
+  id               String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buyerId          String @map("buyer_id") @db.Uuid
+  sellerId         String @map("seller_id") @db.Uuid
+  produceListingId String @map("produce_listing_id") @db.Uuid
+  unitId           String @map("unit_id") @db.Uuid
+  paymentOrderId   String @unique @map("payment_order_id") @db.Uuid
+
+  quantity  Decimal @db.Decimal(12, 3)
+  unitPrice Decimal @map("unit_price") @db.Decimal(12, 2)
+  subtotal  Decimal @db.Decimal(14, 2)
+
+  deliveryType            DeliveryType @map("delivery_type")
+  deliveryAddressSnapshot Json?        @map("delivery_address_snapshot")
+  deliveryCharge          Decimal      @default(0) @map("delivery_charge") @db.Decimal(12, 2)
+
+  requestedDeliveryAt DateTime? @map("requested_delivery_at")
+  estimatedDeliveryAt DateTime? @map("estimated_delivery_at")
+
+  cancellationDeadline      DateTime @map("cancellation_deadline")
+  cancellationFeePercentage Decimal  @default(50.00) @map("cancellation_fee_percentage") @db.Decimal(5, 2)
+
+  status ProduceOrderStatus @default(PENDING_SELLER_APPROVAL)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  buyer        User           @relation("ProduceOrderBuyer", fields: [buyerId], references: [id])
+  seller       User           @relation("ProduceOrderSeller", fields: [sellerId], references: [id])
+  listing      ProduceListing @relation(fields: [produceListingId], references: [id])
+  unit         Unit           @relation(fields: [unitId], references: [id])
+  paymentOrder PaymentOrder   @relation(fields: [paymentOrderId], references: [id])
+
+  reservation InventoryReservation?
+
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([produceListingId])
+  @@index([status])
+  @@index([requestedDeliveryAt])
+  @@index([sellerId, status])
+  @@index([buyerId, status])
+  @@index([produceListingId, status])
+  @@map("produce_orders")
+}
+
+enum InventoryReservationStatus {
+  RESERVED
+  CONFIRMED
+  RELEASED
+}
+
+model InventoryReservation {
+  id                 String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  produceInventoryId String @map("produce_inventory_id") @db.Uuid
+  produceOrderId     String @unique @map("produce_order_id") @db.Uuid
+
+  quantity Decimal                    @db.Decimal(12, 3)
+  status   InventoryReservationStatus @default(RESERVED)
+
+  expiresAt   DateTime  @map("expires_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  releasedAt  DateTime? @map("released_at")
+  confirmedAt DateTime? @map("confirmed_at")
+
+  inventory ProduceInventory @relation(fields: [produceInventoryId], references: [id])
+  order     ProduceOrder     @relation(fields: [produceOrderId], references: [id])
+
+  @@index([produceInventoryId])
+  @@index([status])
+  @@index([expiresAt])
+  @@index([produceInventoryId, status])
+  @@index([status, expiresAt])
+  @@map("inventory_reservations")
+}
+
+// ============================================================
+// EQUIPMENT DOMAIN
+// ============================================================
+
+model EquipmentCategory {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String        @unique @db.VarChar(100)
+  description String?       @db.Text
+  status      CatalogStatus @default(ACTIVE)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  equipment Equipment[]
+
+  @@map("equipment_categories")
+}
+
+enum EquipmentType {
+  VEHICLE
+  MACHINE
+}
+
+model Equipment {
+  id                String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ownerId           String @map("owner_id") @db.Uuid
+  categoryId        String @map("category_id") @db.Uuid
+  locationAddressId String @map("location_address_id") @db.Uuid
+
+  type               EquipmentType
+  name               String  @db.VarChar(150)
+  brand              String? @db.VarChar(100)
+  model              String? @db.VarChar(100)
+  registrationNumber String? @map("registration_number") @db.VarChar(50)
+  description        String? @db.Text
+
+  hourlyPrice Decimal? @map("hourly_price") @db.Decimal(12, 2)
+  dailyPrice  Decimal? @map("daily_price") @db.Decimal(12, 2)
+
+  minRentalMinutes Int @map("min_rental_minutes")
+  maxRentalMinutes Int @map("max_rental_minutes")
+
+  handoverStartTime DateTime? @map("handover_start_time") @db.Time
+  handoverEndTime   DateTime? @map("handover_end_time") @db.Time
+
+  advancePercentage Decimal @default(50.00) @map("advance_percentage") @db.Decimal(5, 2)
+
+  status ListingStatus @default(ACTIVE)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  owner    User              @relation(fields: [ownerId], references: [id])
+  category EquipmentCategory @relation(fields: [categoryId], references: [id])
+  location Address           @relation(fields: [locationAddressId], references: [id])
+
+  images         EquipmentImage[]
+  attachments    EquipmentAttachment[]
+  rentalBookings RentalBooking[]
+
+  @@index([ownerId])
+  @@index([categoryId])
+  @@index([locationAddressId])
+  @@index([type])
+  @@index([status])
+  @@index([ownerId, status])
+  @@index([categoryId, status])
+  @@map("equipment")
+}
+
+model EquipmentImage {
+  id                 String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  equipmentListingId String @map("equipment_listing_id") @db.Uuid
+
+  url       String @db.VarChar(1000)
+  sortOrder Int    @default(0) @map("sort_order")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  equipment Equipment @relation(fields: [equipmentListingId], references: [id])
+
+  @@index([equipmentListingId])
+  @@map("equipment_images")
+}
+
+model Attachment {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String        @unique @db.VarChar(100)
+  description String?       @db.Text
+  status      CatalogStatus @default(ACTIVE)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  equipmentAttachments EquipmentAttachment[]
+
+  @@map("attachments")
+}
+
+model EquipmentAttachment {
+  id           String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  equipmentId  String @map("equipment_id") @db.Uuid
+  attachmentId String @map("attachment_id") @db.Uuid
+
+  hourlyPrice Decimal?      @map("hourly_price") @db.Decimal(12, 2)
+  dailyPrice  Decimal?      @map("daily_price") @db.Decimal(12, 2)
+  status      ListingStatus @default(ACTIVE)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  equipment  Equipment  @relation(fields: [equipmentId], references: [id])
+  attachment Attachment @relation(fields: [attachmentId], references: [id])
+
+  images                   AttachmentImage[]
+  rentalBookingAttachments RentalBookingAttachment[]
+
+  @@index([equipmentId])
+  @@index([attachmentId])
+  @@index([status])
+  @@index([equipmentId, status])
+  @@unique([equipmentId, attachmentId])
+  @@map("equipment_attachments")
+}
+
+model AttachmentImage {
+  id                  String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  attachmentListingId String @map("attachment_listing_id") @db.Uuid
+
+  url       String @db.VarChar(1000)
+  sortOrder Int    @default(0) @map("sort_order")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  equipmentAttachment EquipmentAttachment @relation(fields: [attachmentListingId], references: [id])
+
+  @@index([attachmentListingId])
+  @@map("attachment_images")
+}
+
+// ============================================================
+// RENTAL DOMAIN
+// ============================================================
+
+enum RentalFulfillmentType {
+  PLATFORM_DELIVERY
+  RENTER_PICKUP
+}
+
+enum RentalBookingStatus {
+  PENDING_OWNER_APPROVAL
+  APPROVED
+  PAYMENT_PENDING
+  CONFIRMED
+  ACTIVE
+  COMPLETED
+  REJECTED
+  CANCELLED
+  EXPIRED
+}
+
+enum RentalOption {
+  HOURLY
+  DAILY
+}
+
+model RentalBooking {
+  id             String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  renterId       String @map("renter_id") @db.Uuid
+  ownerId        String @map("owner_id") @db.Uuid
+  equipmentId    String @map("equipment_id") @db.Uuid
+  paymentOrderId String @unique @map("payment_order_id") @db.Uuid
+
+  rentalOption          RentalOption          @map("rental_option")
+  rentalFulfillmentType RentalFulfillmentType @map("rental_fulfillment_type")
+
+  startAt DateTime @map("start_at")
+  endAt   DateTime @map("end_at")
+
+  baseUnitPrice  Decimal @map("base_unit_price") @db.Decimal(12, 2)
+  baseAmount     Decimal @map("base_amount") @db.Decimal(14, 2)
+  operatorAmount Decimal @default(0) @map("operator_amount") @db.Decimal(14, 2)
+  totalAmount    Decimal @map("total_amount") @db.Decimal(14, 2)
+
+  pickupAddressSnapshot Json @map("pickup_address_snapshot")
+  returnAddressSnapshot Json @map("return_address_snapshot")
+
+  ownerResponseDeadline DateTime  @map("owner_response_deadline")
+  paymentDeadline       DateTime? @map("payment_deadline")
+
+  status RentalBookingStatus @default(PENDING_OWNER_APPROVAL)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  renter       User         @relation("RentalBookingRenter", fields: [renterId], references: [id])
+  owner        User         @relation("RentalBookingOwner", fields: [ownerId], references: [id])
+  equipment    Equipment    @relation(fields: [equipmentId], references: [id])
+  paymentOrder PaymentOrder @relation(fields: [paymentOrderId], references: [id])
+
+  attachments RentalBookingAttachment[]
+
+  @@index([renterId])
+  @@index([ownerId])
+  @@index([equipmentId])
+  @@index([rentalOption])
+  @@index([status])
+  @@index([startAt])
+  @@index([endAt])
+  @@index([equipmentId, status])
+  @@index([renterId, status])
+  @@index([ownerId, status])
+  @@map("rental_bookings")
+}
+
+model RentalBookingAttachment {
+  id                    String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  rentalBookingId       String @map("rental_booking_id") @db.Uuid
+  equipmentAttachmentId String @map("equipment_attachment_id") @db.Uuid
+
+  attachmentNameSnapshot String  @map("attachment_name_snapshot") @db.VarChar(100)
+  unitPrice              Decimal @map("unit_price") @db.Decimal(12, 2)
+  totalPrice             Decimal @map("total_price") @db.Decimal(14, 2)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  booking             RentalBooking       @relation(fields: [rentalBookingId], references: [id])
+  equipmentAttachment EquipmentAttachment @relation(fields: [equipmentAttachmentId], references: [id])
+
+  @@index([rentalBookingId])
+  @@index([equipmentAttachmentId])
+  @@unique([rentalBookingId, equipmentAttachmentId])
+  @@map("rental_booking_attachments")
+}
+
+// ============================================================
+// FINANCIAL DOMAIN
+// ============================================================
+
+enum PaymentOrderType {
+  PRODUCE
+  RENTAL
+}
+
+enum PaymentOrderStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+  EXPIRED
+  CANCELLED
+}
+
+model PaymentOrder {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  orderType PaymentOrderType   @map("order_type")
+  amount    Decimal            @db.Decimal(14, 2)
+  currency  String             @default("INR") @db.VarChar(3)
+  status    PaymentOrderStatus @default(PENDING)
+
+  expiresAt DateTime? @map("expires_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  produceOrder  ProduceOrder?
+  rentalBooking RentalBooking?
+  payments      Payment[]
+
+  @@index([status])
+  @@index([expiresAt])
+  @@index([orderType])
+  @@map("payment_orders")
+}
+
+enum PaymentStatus {
+  INITIATED
+  PROCESSING
+  SUCCESS
+  FAILED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  UPI
+  CARD
+  NET_BANKING
+  CASH_ON_DELIVERY
+}
+
+model Payment {
+  id             String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  paymentOrderId String @map("payment_order_id") @db.Uuid
+
+  amount        Decimal       @db.Decimal(14, 2)
+  paymentMethod PaymentMethod @map("payment_method")
+  status        PaymentStatus @default(INITIATED)
+
+  transactionReference String?   @unique @map("transaction_reference") @db.VarChar(150)
+  failureReason         String?   @map("failure_reason") @db.Text
+  paidAt                DateTime? @map("paid_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  paymentOrder PaymentOrder @relation(fields: [paymentOrderId], references: [id])
+
+  commission Commission?
+  payouts    Payout[]
+  refunds    Refund[]
+
+  @@index([paymentOrderId])
+  @@index([status])
+  @@map("payments")
+  // NOTE: partial unique index "one_success_per_payment_order" is added via
+  // raw SQL in the migration file — see database-constraints.md §1.
+  // Prisma's schema language cannot express a filtered (WHERE) unique index.
+}
+
+enum CommissionStatus {
+  CALCULATED
+  SETTLED
+  REVERSED
+}
+
+model Commission {
+  id        String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  paymentId String @unique @map("payment_id") @db.Uuid
+
+  baseAmount Decimal           @map("base_amount") @db.Decimal(14, 2)
+  rate       Decimal           @db.Decimal(5, 2)
+  amount     Decimal           @db.Decimal(14, 2)
+  status     CommissionStatus  @default(CALCULATED)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  payment Payment @relation(fields: [paymentId], references: [id])
+
+  @@index([paymentId])
+  @@index([status])
+  @@map("commissions")
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  SUCCESS
+  FAILED
+  REVERSED
+}
+
+model Payout {
+  id              String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  paymentId       String @map("payment_id") @db.Uuid
+  recipientId     String @map("recipient_id") @db.Uuid
+  payoutAccountId String @map("payout_account_id") @db.Uuid
+
+  amount Decimal      @db.Decimal(14, 2)
+  status PayoutStatus @default(PENDING)
+
+  providerReference String?   @unique @map("provider_reference") @db.VarChar(150)
+  attempts          Int       @default(0)
+  lastError         String?   @map("last_error") @db.Text
+  nextRetryAt       DateTime? @map("next_retry_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  payment       Payment       @relation(fields: [paymentId], references: [id])
+  recipient     User          @relation(fields: [recipientId], references: [id])
+  payoutAccount PayoutAccount @relation(fields: [payoutAccountId], references: [id])
+
+  @@index([paymentId])
+  @@index([recipientId])
+  @@index([payoutAccountId])
+  @@index([status])
+  @@index([status, nextRetryAt])
+  @@map("payouts")
+}
+
+enum RefundStatus {
+  PENDING
+  PROCESSING
+  SUCCESS
+  FAILED
+}
+
+model Refund {
+  id        String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  paymentId String @map("payment_id") @db.Uuid
+
+  amount Decimal      @db.Decimal(14, 2)
+  reason String       @db.Text
+  status RefundStatus @default(PENDING)
+
+  providerReference String?   @unique @map("provider_reference") @db.VarChar(150)
+  refundedAt        DateTime? @map("refunded_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  payment Payment @relation(fields: [paymentId], references: [id])
+
+  @@index([paymentId])
+  @@index([status])
+  @@map("refunds")
+}
+
+model CommissionConfig {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  rate          Decimal  @db.Decimal(5, 2)
+  effectiveFrom DateTime @default(now()) @map("effective_from")
+  createdById   String   @map("created_by") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  createdBy User @relation(fields: [createdById], references: [id])
+
+  @@index([effectiveFrom])
+  @@map("commission_config")
+}
+
+// ============================================================
+// MESSAGING
+// ============================================================
+
+enum ConversationContextType {
+  PRODUCE_ORDER
+  RENTAL_BOOKING
+  GENERAL
+}
+
+model Conversation {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  contextType ConversationContextType @map("context_type")
+  contextId   String?                 @map("context_id") @db.Uuid
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  @@index([contextType])
+  @@index([contextType, contextId])
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  id             String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  conversationId String @map("conversation_id") @db.Uuid
+  userId         String @map("user_id") @db.Uuid
+
+  joinedAt   DateTime  @default(now()) @map("joined_at")
+  lastReadAt DateTime? @map("last_read_at")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+  user         User         @relation(fields: [userId], references: [id])
+
+  @@index([conversationId])
+  @@index([userId])
+  @@unique([conversationId, userId])
+  @@map("conversation_participants")
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  FILE
+  SYSTEM
+}
+
+model Message {
+  id             String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  conversationId String @map("conversation_id") @db.Uuid
+  senderId       String @map("sender_id") @db.Uuid
+
+  messageType MessageType @default(TEXT) @map("message_type")
+  content     String      @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+  sender       User         @relation(fields: [senderId], references: [id])
+
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([conversationId, createdAt])
+  @@map("messages")
+}
+
+// ============================================================
+// OUTBOX & NOTIFICATIONS
+// ============================================================
+
+enum OutboxStatus {
+  PENDING
+  PROCESSING
+  PROCESSED
+  FAILED
+}
+
+model OutboxEvent {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  eventType     String @map("event_type") @db.VarChar(100)
+  aggregateType String @map("aggregate_type") @db.VarChar(50)
+  aggregateId   String @map("aggregate_id") @db.Uuid
+
+  payload Json
+
+  status      OutboxStatus @default(PENDING)
+  attempts    Int          @default(0)
+  maxAttempts Int          @default(5) @map("max_attempts")
+
+  lockedBy String?   @map("locked_by") @db.VarChar(100)
+  lockedAt DateTime? @map("locked_at")
+
+  availableAt DateTime  @default(now()) @map("available_at")
+  processedAt DateTime? @map("processed_at")
+  lastError   String?   @map("last_error") @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  notification Notification?
+
+  @@index([eventType])
+  @@index([status, availableAt])
+  @@index([aggregateType, aggregateId])
+  @@index([lockedAt])
+  @@map("outbox_events")
+}
+
+enum NotificationType {
+  ORDER_PLACED
+  ORDER_APPROVED
+  ORDER_REJECTED
+  ORDER_CANCELLED
+  PAYMENT_SUCCESS
+  PAYMENT_FAILED
+  RENTAL_REQUESTED
+  RENTAL_APPROVED
+  RENTAL_REJECTED
+  RENTAL_CANCELLED
+  PAYOUT_SUCCESS
+  REFUND_SUCCESS
+  MESSAGE_RECEIVED
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  IN_APP
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+model Notification {
+  id            String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String @map("user_id") @db.Uuid
+  outboxEventId String @unique @map("outbox_event_id") @db.Uuid
+
+  type    NotificationType
+  channel NotificationChannel
+
+  title String @db.VarChar(255)
+  body  String @db.Text
+
+  status NotificationStatus @default(PENDING)
+
+  metadata Json?
+
+  sentAt       DateTime? @map("sent_at")
+  failedReason String?   @map("failed_reason") @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user        User        @relation(fields: [userId], references: [id])
+  outboxEvent OutboxEvent @relation(fields: [outboxEventId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([userId, status])
+  @@map("notifications")
 }
