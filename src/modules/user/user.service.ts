@@ -83,7 +83,7 @@ export const userService = {
     if (!user) {
       throw new ApiError(StatusCodes.NOT_FOUND, "User not found");
     }
-    return toPublicUser(user);
+    return user;
   },
 
   updateUser: async (id: string, userData: UpdateUserInput) => {
@@ -120,6 +120,6 @@ export const userService = {
     if (!user) {
       throw new ApiError(StatusCodes.NOT_FOUND, "User not found");
     }
-    return toPublicUser(user);
+    return user;
   }
 };
