@@ -95,8 +95,8 @@ model Address {
   district     String  @db.VarChar(100)
   state        String  @db.VarChar(100)
   pincode      String  @db.VarChar(10)
-  latitude     Decimal? @db.Decimal(10, 7)
-  longitude    Decimal? @db.Decimal(10, 7)
+  latitude     Decimal @db.Decimal(10, 7)
+  longitude    Decimal @db.Decimal(10, 7)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
