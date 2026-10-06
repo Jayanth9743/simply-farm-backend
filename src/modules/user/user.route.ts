@@ -5,6 +5,7 @@ import { authorize } from "@/middlewares/auth/authorize.middleware";
 import { validateRequest } from "@/middlewares/request/validate-request.middleware";
 
 import { addressRouter } from "./address.route";
+import { payoutAccountRouter } from "./payout-account.route";
 import { userController } from "./user.controller";
 import {
   listUsersQuerySchema,
@@ -18,6 +19,7 @@ import "./user.openapi";
 export const userRouter = Router();
 
 userRouter.use("/addresses", addressRouter);
+userRouter.use("/payout-accounts", payoutAccountRouter);
 
 /**
  * Self-service routes take the user id from the verified access token, never

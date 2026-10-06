@@ -114,6 +114,11 @@ enum PayoutMethod {
   UPI
 }
 
+enum PayoutAccountStatus {
+  ACTIVE
+  INACTIVE
+}
+
 model PayoutAccount {
   id     String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId String @map("user_id") @db.Uuid
@@ -125,6 +130,8 @@ model PayoutAccount {
   upiId             String?      @map("upi_id") @db.VarChar(255)
   isDefault         Boolean      @default(false) @map("is_default")
 
+  status PayoutAccountStatus @default(ACTIVE)
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -132,6 +139,7 @@ model PayoutAccount {
   payouts Payout[]
 
   @@index([userId])
+  @@index([userId, status])
   @@map("payout_accounts")
 }
 
