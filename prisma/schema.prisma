@@ -95,8 +95,8 @@ model Address {
   district     String  @db.VarChar(100)
   state        String  @db.VarChar(100)
   pincode      String  @db.VarChar(10)
-  latitude     Decimal? @db.Decimal(10, 7)
-  longitude    Decimal? @db.Decimal(10, 7)
+  latitude     Decimal @db.Decimal(10, 7)
+  longitude    Decimal @db.Decimal(10, 7)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -114,16 +114,23 @@ enum PayoutMethod {
   UPI
 }
 
+enum PayoutAccountStatus {
+  ACTIVE
+  INACTIVE
+}
+
 model PayoutAccount {
   id     String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId String @map("user_id") @db.Uuid
 
   payoutMethod      PayoutMethod @map("payout_method")
-  accountHolderName String?      @map("account_holder_name") @db.VarChar(150)
+  accountHolderName String      @map("account_holder_name") @db.VarChar(150)
   accountNumber     String?      @map("account_number") @db.VarChar(50)
   ifscCode          String?      @map("ifsc_code") @db.VarChar(20)
   upiId             String?      @map("upi_id") @db.VarChar(255)
   isDefault         Boolean      @default(false) @map("is_default")
+
+  status PayoutAccountStatus @default(ACTIVE)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -132,6 +139,7 @@ model PayoutAccount {
   payouts Payout[]
 
   @@index([userId])
+  @@index([userId, status])
   @@map("payout_accounts")
 }
 

@@ -25,7 +25,7 @@ import type { LoginInput, RegisterInput } from "./auth.schema";
  * Explicit allowlist rather than omitting `passwordHash`, so a future sensitive
  * column added to `User` is not exposed by default.
  */
-function toPublicUser(user: User) {
+export const toPublicUser = (user: User) => {
   return {
     id: user.id,
     name: user.name,
@@ -45,10 +45,10 @@ function assertUserActive(user: Pick<User, "status">) {
 }
 
 /** Mints an access token and persists a matching refresh token row. */
-async function issueSession(
+export const issueSession = async (
   user: Pick<User, "id" | "role">,
   db: Prisma.TransactionClient = prisma,
-) {
+) => {
   const accessToken = signAccessToken({ sub: user.id, role: user.role });
   const refreshToken = signRefreshToken({ sub: user.id });
 
