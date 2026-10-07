@@ -124,7 +124,7 @@ model PayoutAccount {
   userId String @map("user_id") @db.Uuid
 
   payoutMethod      PayoutMethod @map("payout_method")
-  accountHolderName String?      @map("account_holder_name") @db.VarChar(150)
+  accountHolderName String      @map("account_holder_name") @db.VarChar(150)
   accountNumber     String?      @map("account_number") @db.VarChar(50)
   ifscCode          String?      @map("ifsc_code") @db.VarChar(20)
   upiId             String?      @map("upi_id") @db.VarChar(255)
