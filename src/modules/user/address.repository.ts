@@ -32,23 +32,4 @@ export const addressRepository = {
       where: { userId },
     });
   },
-
-  /**
-   * `ProduceListing` and `Equipment` both point at `Address` with no
-   * `onDelete`, so Prisma defaults to `Restrict` and deleting a referenced
-   * address raises a foreign key error. Counting first lets the caller return a
-   * useful 409 instead of surfacing that as a 500.
-   */
-  async countReferences(addressId: string) {
-    const [listings, equipment] = await prisma.$transaction([
-      prisma.produceListing.count({
-        where: { locationAddressId: addressId },
-      }),
-      prisma.equipment.count({
-        where: { locationAddressId: addressId },
-      }),
-    ]);
-
-    return { listings, equipment, total: listings + equipment };
-  },
 };

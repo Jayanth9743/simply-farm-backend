@@ -9,27 +9,6 @@ import type {
   UpdateAddressInput,
 } from "./address.schema";
 
-/** Turns the reference counts into something a user can act on. */
-function describeReferences({
-  listings,
-  equipment,
-}: {
-  listings: number;
-  equipment: number;
-}) {
-  const parts: string[] = [];
-
-  if (listings > 0) {
-    parts.push(`${listings} produce listing${listings === 1 ? "" : "s"}`);
-  }
-
-  if (equipment > 0) {
-    parts.push(`${equipment} equipment listing${equipment === 1 ? "" : "s"}`);
-  }
-
-  return `This address is used by ${parts.join(" and ")} and cannot be deleted`;
-}
-
 export const addressService = {
   listAddresses: async (userId: string) => {
     return addressRepository.listAddressesByUserId(userId);
@@ -73,12 +52,6 @@ export const addressService = {
 
     if (!existingAddress || existingAddress.userId !== userId) {
       throw new ApiError(StatusCodes.NOT_FOUND, "Address not found");
-    }
-
-    const references = await addressRepository.countReferences(id);
-
-    if (references.total > 0) {
-      throw new ApiError(StatusCodes.CONFLICT, describeReferences(references));
     }
 
     try {

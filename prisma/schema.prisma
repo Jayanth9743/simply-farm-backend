@@ -102,8 +102,6 @@ model Address {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   user            User             @relation(fields: [userId], references: [id])
-  produceListings ProduceListing[]
-  equipment       Equipment[]
 
   @@index([userId])
   @@map("addresses")
@@ -191,7 +189,7 @@ model ProduceListing {
   sellerId          String @map("seller_id") @db.Uuid
   categoryId        String @map("category_id") @db.Uuid
   unitId            String @map("unit_id") @db.Uuid
-  locationAddressId String @map("location_address_id") @db.Uuid
+  pickupAddressSnapshot  Json @map("pickup_address_snapshot") @db.JsonB
 
   name        String  @db.VarChar(150)
   description String? @db.Text
@@ -208,7 +206,6 @@ model ProduceListing {
   seller   User            @relation(fields: [sellerId], references: [id])
   category ProduceCategory @relation(fields: [categoryId], references: [id])
   unit     Unit            @relation(fields: [unitId], references: [id])
-  location Address         @relation(fields: [locationAddressId], references: [id])
 
   images    ProduceImage[]
   inventory ProduceInventory?
@@ -217,7 +214,6 @@ model ProduceListing {
   @@index([sellerId])
   @@index([categoryId])
   @@index([unitId])
-  @@index([locationAddressId])
   @@index([status])
   @@index([sellerId, status])
   @@index([categoryId, status])
@@ -378,7 +374,7 @@ model Equipment {
   id                String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   ownerId           String @map("owner_id") @db.Uuid
   categoryId        String @map("category_id") @db.Uuid
-  locationAddressId String @map("location_address_id") @db.Uuid
+  pickupAddressSnapshot  Json @map("pickup_address_snapshot") @db.JsonB
 
   type               EquipmentType
   name               String  @db.VarChar(150)
@@ -405,7 +401,6 @@ model Equipment {
 
   owner    User              @relation(fields: [ownerId], references: [id])
   category EquipmentCategory @relation(fields: [categoryId], references: [id])
-  location Address           @relation(fields: [locationAddressId], references: [id])
 
   images         EquipmentImage[]
   attachments    EquipmentAttachment[]
@@ -413,7 +408,6 @@ model Equipment {
 
   @@index([ownerId])
   @@index([categoryId])
-  @@index([locationAddressId])
   @@index([type])
   @@index([status])
   @@index([ownerId, status])
