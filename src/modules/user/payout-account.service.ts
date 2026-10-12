@@ -48,7 +48,11 @@ export const payoutAccountService = {
     const existingCount = await payoutAccountRepository.countActiveByUserId(userId);
 
     const payoutAccount = await payoutAccountRepository.createPayoutAccount({
-      ...payoutAccountData,
+      payoutMethod: payoutAccountData.payoutMethod,
+      accountHolderName: payoutAccountData.accountHolderName ?? "",
+      accountNumber: payoutAccountData.accountNumber ?? null,
+      ifscCode: payoutAccountData.ifscCode ?? null,
+      upiId: payoutAccountData.upiId ?? null,
       isDefault: existingCount === 0,
       user: {
         connect: { id: userId },

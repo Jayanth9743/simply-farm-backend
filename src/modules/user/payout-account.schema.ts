@@ -18,8 +18,7 @@ const payoutAccountBaseSchema = z.object({
     .max(50, "Account number must be at most 50 characters")
     .refine((value) => !value.includes("*"), {
       message: "Masked account number is not valid input",
-    })
-    .optional(),
+    }),
   ifscCode: z
     .string()
     .trim()
